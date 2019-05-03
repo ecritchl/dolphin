@@ -391,6 +391,7 @@ void Jit64::ClearCache()
 
 void Jit64::CLEAR2()
 {
+  blocks.ThanosEval(region, CODE_SIZE);
   blocks.Clear2();
   printf("REGION START:%20x\n", region);
   printf("REGION START + Size:%13x\n", region + CODE_SIZE);

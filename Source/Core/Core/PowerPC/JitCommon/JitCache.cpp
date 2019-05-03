@@ -135,7 +135,7 @@ void JitBaseBlockCache::Clear()
 //    printf("BLOCK TOTAL RUN\t0x%x\t%d\n", e.second.effectiveAddress,
  //          e.second.profile_data.runCount*1000 /
   //             (e.second.profile_data.ticStop - e.second.profile_data.ticStart));
-    printf("BLOCK INDEX:\t%d\t%x\t%x\tSize:\t%x\n", e.second.rSize, e.second.effectiveAddress, e.second.start, e.second.codeSize);
+    //printf("BLOCK INDEX:\t%d\t%x\t%x\tSize:\t%x\n", e.second.rSize, e.second.effectiveAddress, e.second.start, e.second.codeSize);
     DestroyBlock(e.second);
   }
   block_map.clear();
@@ -150,23 +150,40 @@ void JitBaseBlockCache::Clear()
 bool JitBaseBlockCache::ThanosEval(const u8* r, size_t code_size)
 {
   auto MID = r + code_size/2;
-  //u32 tmpHot
+  u32 tmpHot;
+  float UpperAvg;
+  float LowerAvg;
   u32 UpperHotness = 0;
   u32 UpperCount = 0;
   u32 LowerHotness = 0;
   u32 LowerCount = 0;
-  for(const auto& e: block_map)
+
+  for(auto& e: block_map)
   {
-    //tmpHot = e.second.profile_data.runCount*1000 / (e.second.profile_data.ticStop - e.second.profile_data.ticStart);
+    tmpHot = hot_score(e.second);
     if(e.second.start + e.second.codeSize >= MID)
     {
       UpperCount++;
-      //UpperHotness+=
-
+      UpperHotness+=tmpHot;
     }
- //          e.second.profile_data.runCount*1000 /
-  //             (e.second.profile_data.ticStop - e.second.profile_data.ticStart));
+    else
+    {
+      LowerCount++;
+      LowerHotness+=tmpHot;
+    }
+    e.second.profile_data.old_hotness = tmpHot;
   }
+
+  UpperAvg = (UpperHotness*1.0)/(UpperCount*1.0);
+  LowerAvg = (LowerHotness*1.0)/(LowerCount*1.0);
+  printf("UpperCount:\t%d\n", UpperCount);
+  printf("UpperHotness:\t%d\n", UpperHotness);
+  printf("Upper AVG Hotness:\t%f\n", UpperAvg);
+  printf("LowerCount:\t%d\n", LowerCount);
+  printf("LowerHotness:\t%d\n", LowerHotness);
+  printf("Lower AVG Hotness:\t%f\n", LowerAvg);
+
+  return UpperAvg >= LowerAvg;
 }
 
 

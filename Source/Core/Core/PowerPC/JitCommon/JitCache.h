@@ -14,7 +14,7 @@
 #include <vector>
 
 #include "Common/CommonTypes.h"
-#include "Core/Core/PowerPC/Jit64/Jit.h"
+//#include "Core/Core/PowerPC/Jit64/Jit.h"
 
 class JitBase;
 
