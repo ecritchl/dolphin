@@ -136,7 +136,7 @@ public:
   void Init();
   void Shutdown();
   void Clear();
-  void Clear2();
+  void Clear2(const u8*, size_t, std::multimap<u8*,JitBlock>&);
 
   bool ThanosEval(const u8*, size_t);
   JitBlock* DupJitBlock(u32, u32);

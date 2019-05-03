@@ -124,6 +124,7 @@ void JitBaseBlockCache::New_Clear()
 // is full and when saving and loading states.
 void JitBaseBlockCache::Clear()
 {
+  printf("Entering Clear()\n");
 #if defined(_DEBUG) || defined(DEBUGFAST)
   Core::DisplayMessage("Clearing code cache.", 3000);
 #endif
@@ -131,12 +132,13 @@ void JitBaseBlockCache::Clear()
   m_jit.js.pairedQuantizeAddresses.clear();
   for (auto& e : block_map)
   {
-    // e.second.profile_data.ticStop = time(NULL);
-//    printf("BLOCK TOTAL RUN\t0x%x\t%d\n", e.second.effectiveAddress,
- //          e.second.profile_data.runCount*1000 /
-  //             (e.second.profile_data.ticStop - e.second.profile_data.ticStart));
-    //printf("BLOCK INDEX:\t%d\t%x\t%x\tSize:\t%x\n", e.second.rSize, e.second.effectiveAddress, e.second.start, e.second.codeSize);
     DestroyBlock(e.second);
+    /*printf("%5x : Effective Address\n", e.second.effectiveAddress);
+    printf("%5x : Normal Entry\n", e.second.normalEntry);
+    printf("%5x : Start\n", e.second.start);
+    printf("%5x : physical addr\n", e.second.physicalAddress);
+    printf("---------\n");
+    */
   }
   block_map.clear();
   links_to.clear();
@@ -149,33 +151,39 @@ void JitBaseBlockCache::Clear()
 
 bool JitBaseBlockCache::ThanosEval(const u8* r, size_t code_size)
 {
-  auto MID = r + code_size/2;
+  printf("Entering Thanos\n");
+  auto MID = r + code_size / 2;
   u32 tmpHot;
-  float UpperAvg;
-  float LowerAvg;
+  float UpperAvg = 0;
+  float LowerAvg = 0;
   u32 UpperHotness = 0;
   u32 UpperCount = 0;
   u32 LowerHotness = 0;
   u32 LowerCount = 0;
 
-  for(auto& e: block_map)
+  for (auto& e : block_map)
   {
+  //  printf("entering hot_score\n");
+    //tmpHot = 1;
     tmpHot = hot_score(e.second);
-    if(e.second.start + e.second.codeSize >= MID)
+   // printf("leaving hot_score\n");
+    if (e.second.start + e.second.codeSize >= MID)
     {
       UpperCount++;
-      UpperHotness+=tmpHot;
+      UpperHotness += tmpHot;
     }
     else
     {
       LowerCount++;
-      LowerHotness+=tmpHot;
+      LowerHotness += tmpHot;
     }
     e.second.profile_data.old_hotness = tmpHot;
   }
+  if(UpperCount != 0)
+    UpperAvg = (UpperHotness * 1.0) / (UpperCount * 1.0);
+  if(LowerCount != 0)
+    LowerAvg = (LowerHotness * 1.0) / (LowerCount * 1.0);
 
-  UpperAvg = (UpperHotness*1.0)/(UpperCount*1.0);
-  LowerAvg = (LowerHotness*1.0)/(LowerCount*1.0);
   printf("UpperCount:\t%d\n", UpperCount);
   printf("UpperHotness:\t%d\n", UpperHotness);
   printf("Upper AVG Hotness:\t%f\n", UpperAvg);
@@ -183,9 +191,9 @@ bool JitBaseBlockCache::ThanosEval(const u8* r, size_t code_size)
   printf("LowerHotness:\t%d\n", LowerHotness);
   printf("Lower AVG Hotness:\t%f\n", LowerAvg);
 
+  return UpperCount >= LowerCount;
   return UpperAvg >= LowerAvg;
 }
-
 
 /*
 JitBlock* JitBaseBlockCache::DupJitBlock(u32 em_address, u32 msr)
@@ -197,11 +205,70 @@ JitBlock* JitBaseBlockCache::DupJitBlock(u32 em_address, u32 msr)
 }
 */
 
-void JitBaseBlockCache::Clear2()
+void JitBaseBlockCache::Clear2(const u8* r, size_t code_size, std::multimap<u8*,JitBlock> & t_block_m)
 {
+  //void * TMP_CACHE = malloc(code_size/2);
+  //void * ptr = TMP_CACHE;
   printf("Entering Clear2()\n");
-  //Clear cache
-  Clear();
+
+#if defined(_DEBUG) || defined(DEBUGFAST)
+  Core::DisplayMessage("Clearing code cache. - THANOS", 3000);
+#endif
+  m_jit.js.fifoWriteAddresses.clear();
+  m_jit.js.pairedQuantizeAddresses.clear();
+
+//  std::multimap<u32,JitBlock> t_block_m;
+
+  auto MID = r + code_size / 2;
+  for (auto& e : block_map)
+  {
+    if (e.second.start + e.second.codeSize >= MID)
+    {
+      DestroyBlock(e.second);
+    }
+    else
+    {
+   //   memccpy(ptr, e.second.normalEntry, e.second.codeSize, 1);
+    //  ptr = ptr + e.second.codeSize;
+      t_block_m.insert(std::pair<u8*, JitBlock>(e.second.normalEntry, e.second));
+    }
+    
+  }
+/*
+  printf("Left Destroy loop\n");
+  for(std::multimap<u32,JitBlock>::iterator i = block_map.begin(); i != block_map.end(); i++)
+  {
+    if ((*i).second.start + (*i).second.codeSize >= MID)
+    {
+      block_map.erase(i);
+      //DestroyBlock((*i).second);
+    }
+  }
+  */
+/*  for (auto& e : block_map)
+  {
+    printf("Inside block_map erase loop:\t%x\n", e.first);
+    if (e.second.start + e.second.codeSize >= MID)
+    {
+      printf("Erasing Value:\t%x\n", e.first);
+      //block_map.erase(block_map.find(e.first);
+    }
+  }
+  */
+/* for(auto& e: t_block_m)
+ {
+   //printf("HELP\n");
+   //printf("Iterating through block_m: %x\n", e.second.normalEntry);
+ }
+ */
+  block_map.clear();
+  //block_map = t_block_m;
+  links_to.clear();
+  block_range_map.clear();
+
+  valid_block.ClearAll();
+
+  fast_block_map.fill(nullptr);
 }
 
 void JitBaseBlockCache::Reset()

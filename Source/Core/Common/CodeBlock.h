@@ -68,6 +68,13 @@ public:
     ResetCodePtr();
   }
 
+  //Wipe half the cache
+  void ClearCodeSpace2(u8* p)
+  {
+    printf("Entering ClearCodeSpace2\n");
+    ResetCodePtr2(p);
+  }
+
   // Call this when shutting down. Don't rely on the destructor, even though it'll do the job.
   void FreeCodeSpace()
   {
@@ -89,6 +96,7 @@ public:
   // Start over if you need to change the code (call FreeCodeSpace(), AllocCodeSpace()).
   void WriteProtect() { Common::WriteProtectMemory(region, region_size, true); }
   void ResetCodePtr() { T::SetCodePtr(region); }
+  void ResetCodePtr2(u8* P) { T::SetCodePtr(P); }
   size_t GetSpaceLeft() const
   {
     ASSERT(static_cast<size_t>(T::GetCodePtr() - region) < region_size);
