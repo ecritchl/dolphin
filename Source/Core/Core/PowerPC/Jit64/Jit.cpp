@@ -391,6 +391,8 @@ void Jit64::ClearCache()
 
 void Jit64::CLEAR2()
 {
+  //POISON MEMORY
+    //memset(region, 0xCC, region_size);
   blocks.ThanosEval(region, CODE_SIZE);
   blocks.Clear2();
   printf("REGION START:%20x\n", region);

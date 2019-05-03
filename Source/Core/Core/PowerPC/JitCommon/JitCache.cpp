@@ -200,16 +200,6 @@ JitBlock* JitBaseBlockCache::DupJitBlock(u32 em_address, u32 msr)
 void JitBaseBlockCache::Clear2()
 {
   printf("Entering Clear2()\n");
-  //Copy hot blocks into buffer
-  /*void* ptr;
-  for (const auto& e : block_map)
-  {
-    ptr = malloc(sizeof(e.second));
-    memccpy(ptr, &e.second, 1, sizeof(e.second));
-    break;
-  }
-  */
-
   //Clear cache
   Clear();
 }
